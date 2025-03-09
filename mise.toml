@@ -1,2 +1,10 @@
 [tools]
 go = "latest"
+
+[tasks.tag]
+run = """
+DATE="$(date +%Y-%m-%d)"
+git tag $DATE -m "Video tag on ${DATE}"
+git push origin $DATE
+"""
+
