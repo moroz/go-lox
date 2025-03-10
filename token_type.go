@@ -1,10 +1,12 @@
+//go:generate stringer -type=TokenType -trimprefix=TokenType_
+
 package main
 
 type TokenType int
 
 const (
 	// Single-character tokens.
-	TokenType_LeftParen TokenType = iota // LeftParen
+	TokenType_LeftParen TokenType = iota
 	TokenType_RightParen
 	TokenType_LeftBrace
 	TokenType_RightBrace

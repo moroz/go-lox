@@ -10,16 +10,17 @@ type Lox struct {
 	hadError bool
 }
 
+var vm = Lox{}
+
 func main() {
-	l := Lox{}
 	if len(os.Args) > 2 {
 		fmt.Println("Usage: golox [script]")
 		os.Exit(64)
 	}
 	if len(os.Args) == 2 {
-		l.runFile(os.Args[1])
+		vm.runFile(os.Args[1])
 	} else {
-		l.runPrompt()
+		vm.runPrompt()
 	}
 }
 
@@ -51,10 +52,10 @@ func (l *Lox) runPrompt() {
 }
 
 func (l *Lox) run(source string) {
-	scanner := Scanner{source}
-	tokens := scanner.ScanTokens()
+	scanner := NewScanner(source)
+	scanner.scanTokens()
 
-	for _, token := range tokens {
+	for _, token := range scanner.tokens {
 		fmt.Println(token)
 	}
 }
