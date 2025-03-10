@@ -1,5 +1,7 @@
 package main
 
+import "strconv"
+
 type Scanner struct {
 	source []rune
 	tokens []*Token
@@ -104,8 +106,15 @@ func (s *Scanner) scanToken() {
 	case '\n':
 		s.line++
 
+	case '"':
+		s.scanString()
+
 	default:
-		vm.reportError(s.line, "Unexpected character.")
+		if isDigit(c) {
+			s.scanNumber()
+		} else {
+			vm.reportError(s.line, "Unexpected character.")
+		}
 	}
 }
 
@@ -147,4 +156,58 @@ func (s *Scanner) peek() rune {
 		return 0
 	}
 	return s.source[s.current]
+}
+
+func (s *Scanner) scanString() {
+	for s.peek() != '"' && !s.isAtEnd() {
+		if s.peek() == '\n' {
+			s.line++
+		}
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		vm.reportError(s.line, "Unterminated string.")
+	}
+
+	s.advance()
+
+	value := string(s.source[s.start+1 : s.current-1])
+	s.addTokenWithLiteral(TokenType_String, value)
+}
+
+func isDigit(c rune) bool {
+	return c >= '0' && c <= '9'
+}
+
+func (s *Scanner) scanNumber() {
+	for isDigit(s.peek()) {
+		s.advance()
+	}
+
+	if s.peek() == '.' && isDigit(s.peekNext()) {
+		// consume the dot
+		s.advance()
+
+		for isDigit(s.peek()) {
+			s.advance()
+		}
+	}
+
+	// TODO: Report a parsing error if it occurs
+	text := string(s.source[s.start:s.current])
+	num, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		// TODO: Use the built-in error interface instead of plain string literals
+		vm.reportError(s.line, "Invalid number literal")
+		return
+	}
+	s.addTokenWithLiteral(TokenType_Number, num)
+}
+
+func (s *Scanner) peekNext() rune {
+	if s.current+1 >= len(s.source) {
+		return 0
+	}
+	return s.source[s.current+1]
 }
