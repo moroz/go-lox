@@ -100,8 +100,6 @@ func (s *Scanner) scanToken() {
 		}
 
 	case ' ', '\r', '\t':
-		// TODO: do we actually need it?
-		break
 
 	case '\n':
 		s.line++
@@ -113,7 +111,7 @@ func (s *Scanner) scanToken() {
 		if isDigit(c) {
 			s.scanNumber()
 		} else {
-			vm.reportError(s.line, "Unexpected character.")
+			vm.reportError(s.line, ErrUnexpectedCharacter)
 		}
 	}
 }
@@ -167,7 +165,7 @@ func (s *Scanner) scanString() {
 	}
 
 	if s.isAtEnd() {
-		vm.reportError(s.line, "Unterminated string.")
+		vm.reportError(s.line, ErrUnterminatedString)
 	}
 
 	s.advance()
@@ -194,12 +192,10 @@ func (s *Scanner) scanNumber() {
 		}
 	}
 
-	// TODO: Report a parsing error if it occurs
 	text := string(s.source[s.start:s.current])
 	num, err := strconv.ParseFloat(text, 64)
 	if err != nil {
-		// TODO: Use the built-in error interface instead of plain string literals
-		vm.reportError(s.line, "Invalid number literal")
+		vm.reportError(s.line, ErrInvalidNumberLiteral)
 		return
 	}
 	s.addTokenWithLiteral(TokenType_Number, num)

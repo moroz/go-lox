@@ -60,11 +60,11 @@ func (l *Lox) run(source string) {
 	}
 }
 
-func (l *Lox) reportError(line int, msg string) {
-	l.report(line, "", msg)
+func (l *Lox) reportError(line int, err error) {
+	l.report(line, "", err)
 }
 
-func (l *Lox) report(line int, where, msg string) {
-	fmt.Printf("[line %d] Error %s: %s\n", line, where, msg)
+func (l *Lox) report(line int, where string, err error) {
+	fmt.Printf("[line %d] Error %s: %s\n", line, where, err)
 	l.hadError = true
 }
