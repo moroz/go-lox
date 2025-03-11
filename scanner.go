@@ -92,12 +92,14 @@ func (s *Scanner) scanToken() {
 	case '/':
 		// If you encounter two slashes in a row, consume a comment until the end of the line
 		if s.match('/') {
-			for s.peek() != '\n' && !s.isAtEnd() {
-				s.advance()
-			}
-		} else {
-			s.addToken(TokenType_Slash)
+			s.consumeLineComment()
+			break
 		}
+		if s.match('*') {
+			s.consumeMultilineComment()
+			break
+		}
+		s.addToken(TokenType_Slash)
 
 	case ' ', '\r', '\t':
 
@@ -232,4 +234,31 @@ func (s *Scanner) peekNext() rune {
 		return 0
 	}
 	return s.source[s.current+1]
+}
+
+func (s *Scanner) consumeLineComment() {
+	for s.peek() != '\n' && !s.isAtEnd() {
+		s.advance()
+	}
+}
+
+func (s *Scanner) consumeMultilineComment() {
+	for !s.isAtEnd() {
+		switch c := s.peek(); c {
+		case '\n':
+			s.line++
+			s.advance()
+
+		case '*':
+			if s.peekNext() == '/' {
+				s.current += 2
+				return
+			}
+
+		default:
+			s.advance()
+		}
+	}
+
+	vm.reportError(s.line, ErrUnterminatedComment)
 }

@@ -1,0 +1,6 @@
+var test = 2;
+
+/* I am a multiline comment */test = 42;
+test = 32; // I am a single line comment /*
+
+/* I am unterminated
