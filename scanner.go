@@ -110,10 +110,26 @@ func (s *Scanner) scanToken() {
 	default:
 		if isDigit(c) {
 			s.scanNumber()
+		} else if isAlpha(c) {
+			s.scanIdentifier()
 		} else {
 			vm.reportError(s.line, ErrUnexpectedCharacter)
 		}
 	}
+}
+
+func (s *Scanner) scanIdentifier() {
+	for isAlphaNumeric(s.peek()) {
+		s.advance()
+	}
+
+	text := string(s.source[s.start:s.current])
+	if t, ok := keywords[text]; ok {
+		s.addToken(t)
+		return
+	}
+
+	s.addToken(TokenType_Identifier)
 }
 
 func (s *Scanner) advance() rune {
@@ -176,6 +192,16 @@ func (s *Scanner) scanString() {
 
 func isDigit(c rune) bool {
 	return c >= '0' && c <= '9'
+}
+
+func isAlpha(c rune) bool {
+	return c >= 'a' && c <= 'z' ||
+		c >= 'A' && c <= 'Z' ||
+		c == '_'
+}
+
+func isAlphaNumeric(c rune) bool {
+	return isAlpha(c) || isDigit(c)
 }
 
 func (s *Scanner) scanNumber() {
