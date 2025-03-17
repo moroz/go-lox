@@ -1,4 +1,4 @@
-package main
+package expr
 
 type Expr[R any] interface {
 	Accept(Visitor[R]) R

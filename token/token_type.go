@@ -1,6 +1,6 @@
 //go:generate stringer -type=TokenType -trimprefix=TokenType_
 
-package main
+package token
 
 type TokenType int
 
@@ -53,22 +53,3 @@ const (
 
 	TokenType_EOF
 )
-
-var keywords map[string]TokenType = map[string]TokenType{
-	"and":    TokenType_And,
-	"class":  TokenType_Class,
-	"else":   TokenType_Else,
-	"false":  TokenType_False,
-	"for":    TokenType_For,
-	"fun":    TokenType_Fun,
-	"if":     TokenType_If,
-	"nil":    TokenType_Nil,
-	"or":     TokenType_Or,
-	"print":  TokenType_Print,
-	"return": TokenType_Return,
-	"super":  TokenType_Super,
-	"this":   TokenType_This,
-	"true":   TokenType_True,
-	"var":    TokenType_Var,
-	"while":  TokenType_While,
-}
