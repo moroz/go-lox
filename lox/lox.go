@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/moroz/go-lox/parser"
 	"github.com/moroz/go-lox/scanner"
+	"github.com/moroz/go-lox/token"
 )
 
 type Lox struct {
@@ -55,4 +57,12 @@ func (l *Lox) ReportError(line int, err error) {
 func (l *Lox) report(line int, where string, err error) {
 	fmt.Printf("[line %d] Error %s: %s\n", line, where, err)
 	l.hadError = true
+}
+
+func (l *Lox) ReportParseError(err parser.ParseError) {
+	if err.Token.TokenType == token.TokenType_EOF {
+		l.report(err.Token.Line, " at end", err)
+	} else {
+		l.report(err.Token.Line, " at '"+err.Token.Lexeme+"'", err)
+	}
 }
