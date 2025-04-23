@@ -263,6 +263,7 @@ func (s *Scanner) consumeMultilineComment() {
 				s.current += 2
 				return
 			}
+			s.advance()
 
 		default:
 			s.advance()
