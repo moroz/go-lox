@@ -7,7 +7,7 @@ import (
 
 type Parser struct {
 	vm      vm
-	tokens  []token.Token
+	tokens  []*token.Token
 	current int
 }
 
@@ -16,7 +16,7 @@ type vm interface {
 }
 
 type ParseError struct {
-	Token   token.Token
+	Token   *token.Token
 	Message string
 }
 
@@ -24,15 +24,19 @@ func (e ParseError) Error() string {
 	return e.Message
 }
 
-func NewParser(vm vm, tokens []token.Token) *Parser {
+func NewParser(vm vm, tokens []*token.Token) *Parser {
 	return &Parser{vm: vm, tokens: tokens}
 }
 
-func (p *Parser) expression() (expr.Expr[any], error) {
+func (p *Parser) Parse() (expr.Expr, error) {
+	return p.expression()
+}
+
+func (p *Parser) expression() (expr.Expr, error) {
 	return p.equality()
 }
 
-func (p *Parser) equality() (expr.Expr[any], error) {
+func (p *Parser) equality() (expr.Expr, error) {
 	ex, err := p.comparison()
 	if err != nil {
 		return ex, err
@@ -44,7 +48,7 @@ func (p *Parser) equality() (expr.Expr[any], error) {
 		if err != nil {
 			return right, err
 		}
-		ex = expr.Binary[any]{
+		ex = expr.Binary{
 			Left:     ex,
 			Operator: operator,
 			Right:    right,
@@ -54,7 +58,7 @@ func (p *Parser) equality() (expr.Expr[any], error) {
 	return ex, nil
 }
 
-func (p *Parser) comparison() (expr.Expr[any], error) {
+func (p *Parser) comparison() (expr.Expr, error) {
 	ex, err := p.term()
 	if err != nil {
 		return ex, err
@@ -66,7 +70,7 @@ func (p *Parser) comparison() (expr.Expr[any], error) {
 		if err != nil {
 			return right, err
 		}
-		ex = expr.Binary[any]{
+		ex = expr.Binary{
 			Left:     ex,
 			Operator: operator,
 			Right:    right,
@@ -76,7 +80,7 @@ func (p *Parser) comparison() (expr.Expr[any], error) {
 	return ex, nil
 }
 
-func (p *Parser) term() (expr.Expr[any], error) {
+func (p *Parser) term() (expr.Expr, error) {
 	ex, err := p.factor()
 	if err != nil {
 		return ex, err
@@ -88,7 +92,7 @@ func (p *Parser) term() (expr.Expr[any], error) {
 		if err != nil {
 			return right, err
 		}
-		ex = expr.Binary[any]{
+		ex = expr.Binary{
 			Left:     ex,
 			Operator: operator,
 			Right:    right,
@@ -98,7 +102,7 @@ func (p *Parser) term() (expr.Expr[any], error) {
 	return ex, nil
 }
 
-func (p *Parser) factor() (expr.Expr[any], error) {
+func (p *Parser) factor() (expr.Expr, error) {
 	ex, err := p.unary()
 	if err != nil {
 		return ex, err
@@ -110,7 +114,7 @@ func (p *Parser) factor() (expr.Expr[any], error) {
 		if err != nil {
 			return right, err
 		}
-		ex = expr.Binary[any]{
+		ex = expr.Binary{
 			Left:     ex,
 			Operator: operator,
 			Right:    right,
@@ -120,14 +124,14 @@ func (p *Parser) factor() (expr.Expr[any], error) {
 	return ex, nil
 }
 
-func (p *Parser) unary() (expr.Expr[any], error) {
+func (p *Parser) unary() (expr.Expr, error) {
 	if p.match(token.TokenType_Bang, token.TokenType_Minus) {
 		operator := p.previous()
 		right, err := p.unary()
 		if err != nil {
 			return right, err
 		}
-		return expr.Unary[any]{
+		return expr.Unary{
 			Operator: operator,
 			Right:    right,
 		}, nil
@@ -136,27 +140,27 @@ func (p *Parser) unary() (expr.Expr[any], error) {
 	return p.primary()
 }
 
-func (p *Parser) primary() (expr.Expr[any], error) {
+func (p *Parser) primary() (expr.Expr, error) {
 	if p.match(token.TokenType_False) {
-		return expr.Literal[any]{
+		return expr.Literal{
 			Value: false,
 		}, nil
 	}
 
 	if p.match(token.TokenType_True) {
-		return expr.Literal[any]{
+		return expr.Literal{
 			Value: true,
 		}, nil
 	}
 
 	if p.match(token.TokenType_Nil) {
-		return expr.Literal[any]{
+		return expr.Literal{
 			Value: nil,
 		}, nil
 	}
 
 	if p.match(token.TokenType_Number, token.TokenType_String) {
-		return expr.Literal[any]{
+		return expr.Literal{
 			Value: p.previous().Literal,
 		}, nil
 	}
@@ -170,10 +174,13 @@ func (p *Parser) primary() (expr.Expr[any], error) {
 		if err != nil {
 			return nil, err
 		}
-		return expr.Grouping[any]{Expression: ex}, nil
+		return expr.Grouping{Expression: ex}, nil
 	}
 
-	panic("unexpected branch")
+	return nil, ParseError{
+		Token:   p.peek(),
+		Message: "Expected expression.",
+	}
 }
 
 func (p *Parser) match(types ...token.TokenType) bool {
@@ -190,7 +197,7 @@ func (p *Parser) match(types ...token.TokenType) bool {
 func (p *Parser) consume(t token.TokenType, message string) (*token.Token, error) {
 	if p.check(t) {
 		next := p.advance()
-		return &next, nil
+		return next, nil
 	}
 
 	return nil, ParseError{
@@ -207,7 +214,7 @@ func (p *Parser) check(t token.TokenType) bool {
 	return p.peek().TokenType == t
 }
 
-func (p *Parser) advance() token.Token {
+func (p *Parser) advance() *token.Token {
 	if !p.isAtEnd() {
 		p.current++
 	}
@@ -219,10 +226,34 @@ func (p *Parser) isAtEnd() bool {
 	return p.peek().TokenType == token.TokenType_EOF
 }
 
-func (p *Parser) peek() token.Token {
+func (p *Parser) peek() *token.Token {
 	return p.tokens[p.current]
 }
 
-func (p *Parser) previous() token.Token {
+func (p *Parser) previous() *token.Token {
 	return p.tokens[p.current-1]
+}
+
+func (p *Parser) synchronize() {
+	p.advance()
+
+	for !p.isAtEnd() {
+		if p.previous().TokenType == token.TokenType_Semicolon {
+			return
+		}
+
+		switch p.peek().TokenType {
+		case token.TokenType_Class,
+			token.TokenType_Fun,
+			token.TokenType_Var,
+			token.TokenType_For,
+			token.TokenType_If,
+			token.TokenType_While,
+			token.TokenType_Print,
+			token.TokenType_Return:
+			return
+		}
+
+		p.advance()
+	}
 }
